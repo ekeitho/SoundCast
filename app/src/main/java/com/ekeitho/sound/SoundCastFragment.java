@@ -104,9 +104,6 @@ public class SoundCastFragment extends Fragment {
             String soundcloudJsonString = null;
 
             try {
-                // Construct the URL for the OpenWeatherMap query
-                // Possible parameters are avaiable at OWM's forecast API page, at
-                // http://openweathermap.org/API#forecast
                 final String SOUNDCLOUD_BASE_URI =
                         "https://api.soundcloud.com/tracks/" + songname + ".json?client_id=";
                 URL url = new URL(SOUNDCLOUD_BASE_URI + getString(R.string.soundcloud_id));
@@ -162,7 +159,6 @@ public class SoundCastFragment extends Fragment {
                 Log.e("err", e.getMessage(), e);
                 e.printStackTrace();
             }
-            // This will only happen if there was an error getting or parsing the forecast.
             return null;
         }
     }
