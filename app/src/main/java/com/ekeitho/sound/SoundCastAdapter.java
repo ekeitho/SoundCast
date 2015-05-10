@@ -40,6 +40,7 @@ public class SoundCastAdapter extends RecyclerView.Adapter<SoundCastAdapter.View
 
         SoundCastItem item =
                 source.createCastItem(s_url, a_url, artist, artist_permalink, song, song_permalink);
+
         castItems.add(item);
         return item;
     }

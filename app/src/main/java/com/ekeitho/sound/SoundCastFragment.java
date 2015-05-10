@@ -1,6 +1,8 @@
 package com.ekeitho.sound;
 
 import android.app.Activity;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -68,11 +70,16 @@ public class SoundCastFragment extends Fragment {
             Log.e("SQLError", "SQL error: " + e);
         }
 
+        final ClipboardManager myClipboard;
+        myClipboard = (ClipboardManager) mainActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+
         cast_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mainActivity.isConnected()) {
-                    getSoundcloudInfo(cast_text.getText().toString());
+                if (mainActivity.isConnected() && myClipboard.getPrimaryClip() != null) {
+
+                    String soundcloudlink_input = myClipboard.getText().toString();
+                    getSoundcloudInfo(soundcloudlink_input);
                 } else {
                     Toast.makeText(mainActivity,
                             "Please connect Chromecast first.", Toast.LENGTH_SHORT).show();
