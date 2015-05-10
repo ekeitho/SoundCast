@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -69,26 +70,37 @@ public class SoundCastFragment extends Fragment {
         return view;
     }
 
-    public void getSoundcloudDataFromJson(String responses[]) throws JSONException {
-        JSONObject track_infoJSON = new JSONObject(responses[0]);
-        JSONObject user_infoJSON = new JSONObject(responses[1]);
+    public void getSoundcloudDataFromJson(String response, String songname) throws JSONException {
+        JSONArray user_tracksJSON = new JSONArray(response);
+        JSONObject track_infoJSON;
 
+        for (int i = 0; i < user_tracksJSON.length(); i++) {
+            track_infoJSON = user_tracksJSON.getJSONObject(i);
+            /* check permalink to for the songname */
+            if (track_infoJSON.getString("permalink").equals(songname)) {
+                /* make sure it is streamable */
+                if (track_infoJSON.getBoolean("streamable")) {
+                    /* get streamable url */
+                    String stream_url = track_infoJSON.getString("stream_url") +
+                            "?client_id=" + getString(R.string.soundcloud_id);
+                    /* get the username */
+                    String username = track_infoJSON.getJSONObject("user").getString("username");
+                    /* get the title of the song */
+                    String title = track_infoJSON.getString("title");
 
-        String stream_url = track_infoJSON.getString("stream_url") +
-                                        "?client_id=" + getString(R.string.soundcloud_id);
-        String username = user_infoJSON.getString("username");
-        String title = track_infoJSON.getString("title");
+                     /* sometimes there isn't an album art - so get the users picture then */
+                    String album_art_uri = track_infoJSON.getString("artwork_url");
+                    if (album_art_uri.equals("null")) {
+                        album_art_uri = track_infoJSON.getJSONObject("user").getString("avatar_url");
+                    }
+                    album_art_uri.replaceAll("large", "t500x500");
 
-        /* sometimes there isn't an album art - so get the users picture then */
-        String album_art_uri = track_infoJSON.getString("artwork_url");
-        if (album_art_uri.equals("null")) {
-            album_art_uri = user_infoJSON.getString("avatar_url");
+                    Uri uri = Uri.parse(album_art_uri);
+
+                    mainActivity.sendTrack(stream_url, username, title, uri);
+                }
+            }
         }
-        album_art_uri.replaceAll("large", "t500x500");
-
-        Uri uri = Uri.parse(album_art_uri);
-
-        mainActivity.sendTrack(stream_url, username, title, uri);
     }
 
     private class FetchSoundCloudApi extends AsyncTask<String, Void, Void> {
@@ -103,19 +115,17 @@ public class SoundCastFragment extends Fragment {
             String username = params[0];
             String songname = params[1];
 
-            String[] responses = new String[2];
+            String response = null;
             // Will contain the raw JSON response as a string.
             String scBaseUri = "https://api.soundcloud.com/";
             String client_query = ".json?client_id=" + getString(R.string.soundcloud_id);
-            String USERS = scBaseUri + "users/" + username + client_query;
-            String TRACKS = scBaseUri + "tracks/" + songname + client_query;
+            String USERS = scBaseUri + "users/" + username;
 
-            responses[0] = fetchJSON(TRACKS);
-            responses[1] = fetchJSON(USERS);
-
-            if (responses[0] != null && responses[1] != null) {
+            /* since not all tracks/ are unique, i have to look up through users/id/track first */
+            response = fetchJSON(USERS + "/tracks" + client_query);
+            if (response != null) {
                 try {
-                    getSoundcloudDataFromJson(responses);
+                    getSoundcloudDataFromJson(response, songname);
                 } catch (JSONException e) {
                     Log.e("err", e.getMessage(), e);
                     e.printStackTrace();
