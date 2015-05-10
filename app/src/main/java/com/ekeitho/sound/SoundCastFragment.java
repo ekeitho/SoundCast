@@ -95,14 +95,17 @@ public class SoundCastFragment extends Fragment {
             Log.v(TAG, "File already cached. Casting!");
         }
         else {
-            new FetchSoundCloudApi().execute(username, songname);
             Log.v(TAG, "File not in cache. Find and Cast!");
+            new FetchSoundCloudApi().execute(username, songname);
         }
     }
 
-    public void getSoundcloudDataFromJson(String response, String songPermalink, String perm_username) throws JSONException {
+    public boolean getSoundcloudDataFromJson(String response, String songPermalink, String perm_username) throws JSONException {
         JSONArray user_tracksJSON = new JSONArray(response);
         JSONObject track_infoJSON;
+
+
+        System.out.println("I am here in get soundcloud data from json\n");
 
         for (int i = 0; i < user_tracksJSON.length(); i++) {
             track_infoJSON = user_tracksJSON.getJSONObject(i);
@@ -131,14 +134,22 @@ public class SoundCastFragment extends Fragment {
                             perm_username, title, songPermalink);
                     /* send to the cast ! */
                     mainActivity.sendTrack(stream_url, username, title, uri);
+                    return true;
                 }
                 /* if the url isn't streamable - notify the user */
                 else {
-                    Toast.makeText(mainActivity,
-                                "URL given is not streamable.", Toast.LENGTH_SHORT).show();
+                    mainActivity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(mainActivity,
+                                    "URL given is not streamable.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
             }
         }
+
+        return false;
     }
 
     private class FetchSoundCloudApi extends AsyncTask<String, Void, Void> {
@@ -149,6 +160,7 @@ public class SoundCastFragment extends Fragment {
             if (params.length == 0) {
                 return null;
             }
+
 
             String username = params[0];
             String songname = params[1];
@@ -161,16 +173,35 @@ public class SoundCastFragment extends Fragment {
 
             /* since not all tracks/ are unique, i have to look up through users/id/track first */
             response = fetchJSON(USERS + "/tracks" + client_query);
+
+            System.out.println("I am here befor response != null statement \n");
             if (response != null) {
                 try {
-                    getSoundcloudDataFromJson(response, songname, username);
+                    /* if the recevied data is okay */
+                    if (getSoundcloudDataFromJson(response, songname, username)) {
+
+                    }
+                    else {
+                        mainActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(mainActivity, "Rejected by Soundcloud.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                 } catch (JSONException e) {
                     Log.e("err", e.getMessage(), e);
                     e.printStackTrace();
                 }
             }
             else {
-                Toast.makeText(mainActivity, "Bad URL given.", Toast.LENGTH_SHORT).show();
+                mainActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(mainActivity, "Bad URL given.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             /* end */

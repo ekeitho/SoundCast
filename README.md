@@ -9,3 +9,7 @@ Supports:
 		- if no album art, will grab artist photo
 	- Artist Name
 	- Title of Song
+	- Small cache for recentely casted soundcloud links
+
+Note:
+	- Not all songs have a streamable link url and some endpoints are blocked by Soundcloud
