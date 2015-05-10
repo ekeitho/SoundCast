@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">SoundCast</string>
 
-    <string name="app_id">99B91C2A</string>
+    <string name="app_id">F4D5C21C</string>
     <string name="soundcloud_id">82f31c2903e5032ae74bc5c17d82d63c</string>
     <string name="namespace">urn:x-cast:com.google.cast.media</string>
     <string name="action_settings">Settings</string>
