@@ -16,6 +16,7 @@ package com.ekeitho.sound;
  */
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -27,6 +28,9 @@ import android.support.v7.app.MediaRouteActionProvider;
 import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
 import android.support.v7.media.MediaRouter.RouteInfo;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -72,10 +76,9 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ActionBar actionBar = getSupportActionBar();
-        actionBar.setBackgroundDrawable(new ColorDrawable(
-                android.R.color.holo_green_light));
 
+
+        ActionBar actionBar = getSupportActionBar();
 
         // Configure Cast device discovery
         mMediaRouter = MediaRouter.getInstance(getApplicationContext());
@@ -92,7 +95,7 @@ public class MainActivity extends ActionBarActivity {
                     public void onStatusUpdated() {
                         MediaStatus mediaStatus = mRemoteMediaPlayer.getMediaStatus();
                         //boolean isPlaying = mediaStatus.getPlayerState() ==
-                                //MediaStatus.PLAYER_STATE_PLAYING;
+                        //MediaStatus.PLAYER_STATE_PLAYING;
 
                     }
                 });
@@ -106,6 +109,7 @@ public class MainActivity extends ActionBarActivity {
 
                     }
                 });
+
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {

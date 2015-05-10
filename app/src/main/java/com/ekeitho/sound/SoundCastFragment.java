@@ -5,6 +5,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +15,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.ekeitho.sound.data.SoundCastItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,15 +28,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.SQLException;
 
 /**
  * Created by ekeitho on 5/9/15.
  */
 public class SoundCastFragment extends Fragment {
 
+    private static final String TAG = "SoundCastFragment";
+
     private MainActivity mainActivity;
     private Button cast_button;
     private EditText cast_text;
+    private RecyclerView castRecyclerView;
+    private SoundCastAdapter soundCastAdapter;
 
     @Override
     public void onAttach(Activity activity) {
@@ -39,12 +49,6 @@ public class SoundCastFragment extends Fragment {
         super.onAttach(activity);
     }
 
-    private void getSoundcloudInfo(String text) {
-        String input = text.replaceAll(".*soundcloud.com/", "");
-        String username = input.replaceAll("/.*", "");
-        String songname = input.replaceAll(".*/", "");
-        new FetchSoundCloudApi().execute(username, songname);
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -52,6 +56,17 @@ public class SoundCastFragment extends Fragment {
 
         cast_button = (Button) view.findViewById(R.id.cast_button);
         cast_text = (EditText) view.findViewById(R.id.cast_text);
+
+        castRecyclerView = (RecyclerView) view.findViewById(R.id.cast_recycler_view);
+        castRecyclerView.setHasFixedSize(true);
+        try {
+            soundCastAdapter = new SoundCastAdapter(mainActivity);
+            castRecyclerView.setAdapter(soundCastAdapter);
+            castRecyclerView.setLayoutManager(new LinearLayoutManager(mainActivity));
+            castRecyclerView.setItemAnimator(new DefaultItemAnimator());
+        } catch (SQLException e) {
+            Log.e("SQLError", "SQL error: " + e);
+        }
 
         cast_button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -68,14 +83,31 @@ public class SoundCastFragment extends Fragment {
         return view;
     }
 
-    public void getSoundcloudDataFromJson(String response, String songname) throws JSONException {
+    private void getSoundcloudInfo(String text) {
+        String input = text.replaceAll(".*soundcloud.com/", "");
+        String username = input.replaceAll("/.*", "");
+        String songname = input.replaceAll(".*/", "");
+        SoundCastItem item = null;
+
+        if ((item = soundCastAdapter.checkIfAlreadyCasted(username, songname)) != null) {
+            mainActivity.sendTrack(item.getStreamUrl(), item.getArtist(),
+                    item.getSong(), Uri.parse(item.getAlbumArtUrl()));
+            Log.v(TAG, "File already cached. Casting!");
+        }
+        else {
+            new FetchSoundCloudApi().execute(username, songname);
+            Log.v(TAG, "File not in cache. Find and Cast!");
+        }
+    }
+
+    public void getSoundcloudDataFromJson(String response, String songPermalink, String perm_username) throws JSONException {
         JSONArray user_tracksJSON = new JSONArray(response);
         JSONObject track_infoJSON;
 
         for (int i = 0; i < user_tracksJSON.length(); i++) {
             track_infoJSON = user_tracksJSON.getJSONObject(i);
-            /* check permalink to for the songname */
-            if (track_infoJSON.getString("permalink").equals(songname)) {
+            /* check permalink to for the songPermalink */
+            if (track_infoJSON.getString("permalink").equals(songPermalink)) {
                 /* make sure it is streamable */
                 if (track_infoJSON.getBoolean("streamable")) {
                     /* get streamable url */
@@ -92,10 +124,11 @@ public class SoundCastFragment extends Fragment {
                         album_art_uri = track_infoJSON.getJSONObject("user").getString("avatar_url");
                     }
                     album_art_uri = album_art_uri.replaceAll("large", "t500x500");
-
-                    System.out.println(album_art_uri);
                     Uri uri = Uri.parse(album_art_uri);
 
+                    /* add the data to a sqlite databse */
+                    soundCastAdapter.addCastItem(stream_url, album_art_uri, username,
+                            perm_username, title, songPermalink);
                     /* send to the cast ! */
                     mainActivity.sendTrack(stream_url, username, title, uri);
                 }
@@ -130,7 +163,7 @@ public class SoundCastFragment extends Fragment {
             response = fetchJSON(USERS + "/tracks" + client_query);
             if (response != null) {
                 try {
-                    getSoundcloudDataFromJson(response, songname);
+                    getSoundcloudDataFromJson(response, songname, username);
                 } catch (JSONException e) {
                     Log.e("err", e.getMessage(), e);
                     e.printStackTrace();
