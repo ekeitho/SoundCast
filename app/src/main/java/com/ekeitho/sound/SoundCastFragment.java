@@ -88,16 +88,23 @@ public class SoundCastFragment extends Fragment {
                     /* get the title of the song */
                     String title = track_infoJSON.getString("title");
 
-                     /* sometimes there isn't an album art - so get the users picture then */
+                    /* sometimes there isn't an album art - so get the users picture then */
                     String album_art_uri = track_infoJSON.getString("artwork_url");
                     if (album_art_uri.equals("null")) {
                         album_art_uri = track_infoJSON.getJSONObject("user").getString("avatar_url");
                     }
-                    album_art_uri.replaceAll("large", "t500x500");
+                    album_art_uri = album_art_uri.replaceAll("large", "t500x500");
 
+                    System.out.println(album_art_uri);
                     Uri uri = Uri.parse(album_art_uri);
 
+                    /* send to the cast ! */
                     mainActivity.sendTrack(stream_url, username, title, uri);
+                }
+                /* if the url isn't streamable - notify the user */
+                else {
+                    Toast.makeText(mainActivity,
+                                "URL given is not streamable.", Toast.LENGTH_SHORT).show();
                 }
             }
         }
@@ -130,6 +137,9 @@ public class SoundCastFragment extends Fragment {
                     Log.e("err", e.getMessage(), e);
                     e.printStackTrace();
                 }
+            }
+            else {
+                Toast.makeText(mainActivity, "Bad URL given.", Toast.LENGTH_SHORT).show();
             }
 
             /* end */
