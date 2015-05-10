@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">SoundCast</string>
+
+    <string name="app_id">F6D3E50B</string>
+    <string name="soundcloud_id">82f31c2903e5032ae74bc5c17d82d63c</string>
+    <string name="namespace">urn:x-cast:com.google.cast.media</string>
+    <string name="action_settings">Settings</string>
+    <string name="media_route_menu_title">Play on&#8230;</string>
+</resources>
