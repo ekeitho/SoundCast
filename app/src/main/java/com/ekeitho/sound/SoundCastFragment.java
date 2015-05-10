@@ -30,8 +30,6 @@ import java.net.URL;
 public class SoundCastFragment extends Fragment {
 
     private MainActivity mainActivity;
-    private static final String FIND_USERNAME_INFO = "USER_INFO";
-    private static final String FIND_SONGNAME_INFO = "SONG_INFO";
     private Button cast_button;
     private EditText cast_text;
 
