@@ -37,7 +37,11 @@ public class SoundCastAdapter extends RecyclerView.Adapter<SoundCastAdapter.View
     public SoundCastItem addCastItem(String s_url, String a_url,
                                      String artist, String artist_permalink,
                                      String song, String song_permalink) {
-        return source.createCastItem(s_url, a_url, artist, artist_permalink, song, song_permalink);
+
+        SoundCastItem item =
+                source.createCastItem(s_url, a_url, artist, artist_permalink, song, song_permalink);
+        castItems.add(item);
+        return item;
     }
 
     public SoundCastItem checkIfAlreadyCasted(String username, String songname) {

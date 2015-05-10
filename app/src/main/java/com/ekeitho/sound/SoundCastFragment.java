@@ -100,7 +100,71 @@ public class SoundCastFragment extends Fragment {
         }
     }
 
-    public boolean getSoundcloudDataFromJson(String response, String songPermalink, String perm_username) throws JSONException {
+    private class FetchSoundCloudApi extends AsyncTask<String, Void, SoundCastItem> {
+        @Override
+        protected SoundCastItem doInBackground(String... params) {
+
+            // If there's no zip code, there's nothing to look up.  Verify size of params.
+            if (params.length == 0) {
+                return null;
+            }
+
+
+            String username = params[0];
+            String songname = params[1];
+
+            String response = null;
+            // Will contain the raw JSON response as a string.
+            String scBaseUri = "https://api.soundcloud.com/";
+            String client_query = ".json?client_id=" + getString(R.string.soundcloud_id);
+            String USERS = scBaseUri + "users/" + username;
+
+            /* since not all tracks/ are unique, i have to look up through users/id/track first */
+            response = fetchJSON(USERS + "/tracks" + client_query);
+
+            System.out.println("I am here befor response != null statement \n");
+            if (response != null) {
+                try {
+                    SoundCastItem item = null;
+                    /* if the recevied data is okay */
+                    if ((item = getSoundcloudDataFromJson(response, songname, username)) != null ) {
+                        return item;
+                    }
+                    else {
+                        mainActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(mainActivity, "Rejected by Soundcloud.",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                } catch (JSONException e) {
+                    Log.e("err", e.getMessage(), e);
+                    e.printStackTrace();
+                }
+            }
+            else {
+                mainActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(mainActivity, "Bad URL given.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            /* end */
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(SoundCastItem soundCastItem) {
+            super.onPostExecute(soundCastItem);
+            soundCastAdapter.notifyDataSetChanged();
+        }
+    }
+
+    public SoundCastItem getSoundcloudDataFromJson(String response, String songPermalink, String perm_username) throws JSONException {
         JSONArray user_tracksJSON = new JSONArray(response);
         JSONObject track_infoJSON;
 
@@ -130,11 +194,12 @@ public class SoundCastFragment extends Fragment {
                     Uri uri = Uri.parse(album_art_uri);
 
                     /* add the data to a sqlite databse */
-                    soundCastAdapter.addCastItem(stream_url, album_art_uri, username,
+                    SoundCastItem item = soundCastAdapter.addCastItem(stream_url, album_art_uri, username,
                             perm_username, title, songPermalink);
                     /* send to the cast ! */
                     mainActivity.sendTrack(stream_url, username, title, uri);
-                    return true;
+
+                    return item;
                 }
                 /* if the url isn't streamable - notify the user */
                 else {
@@ -149,64 +214,7 @@ public class SoundCastFragment extends Fragment {
             }
         }
 
-        return false;
-    }
-
-    private class FetchSoundCloudApi extends AsyncTask<String, Void, Void> {
-        @Override
-        protected Void doInBackground(String... params) {
-
-            // If there's no zip code, there's nothing to look up.  Verify size of params.
-            if (params.length == 0) {
-                return null;
-            }
-
-
-            String username = params[0];
-            String songname = params[1];
-
-            String response = null;
-            // Will contain the raw JSON response as a string.
-            String scBaseUri = "https://api.soundcloud.com/";
-            String client_query = ".json?client_id=" + getString(R.string.soundcloud_id);
-            String USERS = scBaseUri + "users/" + username;
-
-            /* since not all tracks/ are unique, i have to look up through users/id/track first */
-            response = fetchJSON(USERS + "/tracks" + client_query);
-
-            System.out.println("I am here befor response != null statement \n");
-            if (response != null) {
-                try {
-                    /* if the recevied data is okay */
-                    if (getSoundcloudDataFromJson(response, songname, username)) {
-
-                    }
-                    else {
-                        mainActivity.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(mainActivity, "Rejected by Soundcloud.",
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                } catch (JSONException e) {
-                    Log.e("err", e.getMessage(), e);
-                    e.printStackTrace();
-                }
-            }
-            else {
-                mainActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(mainActivity, "Bad URL given.", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-
-            /* end */
-            return null;
-        }
+        return null;
     }
 
     private String fetchJSON(String scFetchDataString) {
