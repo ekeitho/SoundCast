@@ -15,4 +15,10 @@
         android:id="@+id/cast_button"
         android:layout_gravity="right"/>
 
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/cast_recycler_view"
+        android:scrollbars="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
 </LinearLayout>
