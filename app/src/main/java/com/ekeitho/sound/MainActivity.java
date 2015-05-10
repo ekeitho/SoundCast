@@ -16,13 +16,10 @@ package com.ekeitho.sound;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 
-import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.speech.RecognizerIntent;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
@@ -34,15 +31,8 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.Toast;
-
-import com.google.android.gms.cast.ApplicationMetadata;
 import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.Cast.ApplicationConnectionResult;
-import com.google.android.gms.cast.Cast.MessageReceivedCallback;
 import com.google.android.gms.cast.CastDevice;
 import com.google.android.gms.cast.CastMediaControlIntent;
 import com.google.android.gms.cast.MediaInfo;
