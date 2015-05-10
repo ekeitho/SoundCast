@@ -20,6 +20,7 @@ import java.util.ArrayList;
 
 import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v4.view.MenuItemCompat;
@@ -52,6 +53,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.common.images.WebImage;
 
 /**
  * Main activity to send messages to the receiver.
@@ -387,10 +389,12 @@ public class MainActivity extends ActionBarActivity {
         mSessionId = null;
     }
 
-    public void sendTrack(String url) {
+    public void sendTrack(String url, String artist, String title, Uri album_art) {
         if (mApiClient != null) {
             MediaMetadata mediaMetadata = new MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE);
-            mediaMetadata.putString(MediaMetadata.KEY_TITLE, "My video");
+            mediaMetadata.putString(MediaMetadata.KEY_ALBUM_ARTIST, artist);
+            mediaMetadata.putString(MediaMetadata.KEY_TITLE, title);
+            mediaMetadata.addImage(new WebImage(album_art));
             MediaInfo mediaInfo = new MediaInfo.Builder(
                     url)
                     .setContentType("audio/mpeg")

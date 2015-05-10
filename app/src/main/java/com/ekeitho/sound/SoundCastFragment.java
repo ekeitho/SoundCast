@@ -1,6 +1,7 @@
 package com.ekeitho.sound;
 
 import android.app.Activity;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -68,8 +69,18 @@ public class SoundCastFragment extends Fragment {
 
     public void getSoundcloudDataFromJson(String response) throws JSONException {
         JSONObject soundcloudJson = new JSONObject(response);
-        String stream_url = soundcloudJson.getString("stream_url");
-        mainActivity.sendTrack(stream_url + "?client_id=" + getString(R.string.soundcloud_id));
+        JSONObject user_object = soundcloudJson.getJSONObject("user");
+
+        String stream_url = soundcloudJson.getString("stream_url") +
+                                        "?client_id=" + getString(R.string.soundcloud_id);
+        String username = user_object.getString("username");
+        String title = soundcloudJson.getString("title");
+        String album_art_uri = soundcloudJson.getString("artwork_url")
+                .replaceAll("large", "t500x500");
+
+        Uri uri = Uri.parse(album_art_uri);
+
+        mainActivity.sendTrack(stream_url, username, title, uri);
     }
 
     private class FetchSoundCloudApi extends AsyncTask<String, Void, Void> {
