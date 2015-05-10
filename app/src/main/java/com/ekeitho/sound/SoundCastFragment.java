@@ -29,6 +29,8 @@ import java.net.URL;
 public class SoundCastFragment extends Fragment {
 
     private MainActivity mainActivity;
+    private static final String FIND_USERNAME_INFO = "USER_INFO";
+    private static final String FIND_SONGNAME_INFO = "SONG_INFO";
     private Button cast_button;
     private EditText cast_text;
 
@@ -67,16 +69,22 @@ public class SoundCastFragment extends Fragment {
         return view;
     }
 
-    public void getSoundcloudDataFromJson(String response) throws JSONException {
-        JSONObject soundcloudJson = new JSONObject(response);
-        JSONObject user_object = soundcloudJson.getJSONObject("user");
+    public void getSoundcloudDataFromJson(String responses[]) throws JSONException {
+        JSONObject track_infoJSON = new JSONObject(responses[0]);
+        JSONObject user_infoJSON = new JSONObject(responses[1]);
 
-        String stream_url = soundcloudJson.getString("stream_url") +
+
+        String stream_url = track_infoJSON.getString("stream_url") +
                                         "?client_id=" + getString(R.string.soundcloud_id);
-        String username = user_object.getString("username");
-        String title = soundcloudJson.getString("title");
-        String album_art_uri = soundcloudJson.getString("artwork_url")
-                .replaceAll("large", "t500x500");
+        String username = user_infoJSON.getString("username");
+        String title = track_infoJSON.getString("title");
+
+        /* sometimes there isn't an album art - so get the users picture then */
+        String album_art_uri = track_infoJSON.getString("artwork_url");
+        if (album_art_uri.equals("null")) {
+            album_art_uri = user_infoJSON.getString("avatar_url");
+        }
+        album_art_uri.replaceAll("large", "t500x500");
 
         Uri uri = Uri.parse(album_art_uri);
 
@@ -95,72 +103,85 @@ public class SoundCastFragment extends Fragment {
             String username = params[0];
             String songname = params[1];
 
-            // These two need to be declared outside the try/catch
-            // so that they can be closed in the finally block.
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
-
+            String[] responses = new String[2];
             // Will contain the raw JSON response as a string.
-            String soundcloudJsonString = null;
+            String scBaseUri = "https://api.soundcloud.com/";
+            String client_query = ".json?client_id=" + getString(R.string.soundcloud_id);
+            String USERS = scBaseUri + "users/" + username + client_query;
+            String TRACKS = scBaseUri + "tracks/" + songname + client_query;
 
-            try {
-                final String SOUNDCLOUD_BASE_URI =
-                        "https://api.soundcloud.com/tracks/" + songname + ".json?client_id=";
-                URL url = new URL(SOUNDCLOUD_BASE_URI + getString(R.string.soundcloud_id));
+            responses[0] = fetchJSON(TRACKS);
+            responses[1] = fetchJSON(USERS);
 
-                // Create the request to OpenWeatherMap, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
-
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                if (inputStream == null) {
-                    // Nothing to do.
-                    return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                soundcloudJsonString = buffer.toString();
-            } catch (IOException e) {
-                Log.e("err", "Error ", e);
-                // If the code didn't successfully get the weather data, there's no point in attemping
-                // to parse it.
-                return null;
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e("err", "Error closing stream", e);
-                    }
+            if (responses[0] != null && responses[1] != null) {
+                try {
+                    getSoundcloudDataFromJson(responses);
+                } catch (JSONException e) {
+                    Log.e("err", e.getMessage(), e);
+                    e.printStackTrace();
                 }
             }
 
-            try {
-                getSoundcloudDataFromJson(soundcloudJsonString);
-            } catch (JSONException e) {
-                Log.e("err", e.getMessage(), e);
-                e.printStackTrace();
-            }
+            /* end */
             return null;
         }
+    }
+
+    private String fetchJSON(String scFetchDataString) {
+        // These two need to be declared outside the try/catch
+        // so that they can be closed in the finally block.
+        HttpURLConnection urlConnection = null;
+        BufferedReader reader = null;
+        String soundcloudJsonString = null;
+
+        try {
+            URL url = new URL(scFetchDataString);
+
+            // Create the request to OpenWeatherMap, and open the connection
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+
+            // Read the input stream into a String
+            InputStream inputStream = urlConnection.getInputStream();
+            StringBuffer buffer = new StringBuffer();
+            if (inputStream == null) {
+                // Nothing to do.
+                return null;
+            }
+            reader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                // But it does make debugging a *lot* easier if you print out the completed
+                // buffer for debugging.
+                buffer.append(line + "\n");
+            }
+
+            if (buffer.length() == 0) {
+                // Stream was empty.  No point in parsing.
+                return null;
+            }
+            soundcloudJsonString = buffer.toString();
+        } catch (IOException e) {
+            Log.e("err", "Error ", e);
+            // If the code didn't successfully get the weather data, there's no point in attemping
+            // to parse it.
+            return null;
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (final IOException e) {
+                    Log.e("err", "Error closing stream", e);
+                }
+            }
+        }
+        return soundcloudJsonString;
     }
 
 }
