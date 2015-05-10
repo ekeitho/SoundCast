@@ -3,3 +3,9 @@ There are other apps that do something similar, but I wanted to make it very sim
 So I created this extremely minimal Android App so I don't have to kill my battery anymore. :)
 
 All you have to do is put a soundcloud link in the text box and click, 'cast'.
+
+Supports:
+	- Album Art
+		- if no album art, will grab artist photo
+	- Artist Name
+	- Title of Song
