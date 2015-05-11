@@ -2,6 +2,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context=".MainActivity">
+
     <item
         android:id="@+id/media_route_menu_item"
         android:title="@string/media_route_menu_title"

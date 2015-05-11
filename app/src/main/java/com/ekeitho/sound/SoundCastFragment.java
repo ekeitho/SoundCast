@@ -3,10 +3,14 @@ package com.ekeitho.sound;
 import android.app.Activity;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.graphics.Palette;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,6 +23,8 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.ekeitho.sound.data.SoundCastItem;
+import com.getbase.floatingactionbutton.FloatingActionButton;
+import com.getbase.floatingactionbutton.FloatingActionsMenu;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,6 +50,10 @@ public class SoundCastFragment extends Fragment {
     private EditText cast_text;
     private RecyclerView castRecyclerView;
     private SoundCastAdapter soundCastAdapter;
+    private FloatingActionsMenu menu;
+    private FloatingActionButton addToQueueActionButton;
+    private FloatingActionButton castActionButton;
+    private Bitmap bitmap;
 
     @Override
     public void onAttach(Activity activity) {
@@ -56,8 +66,7 @@ public class SoundCastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.soundcast_fragment, container, false);
 
-        cast_button = (Button) view.findViewById(R.id.cast_button);
-        cast_text = (EditText) view.findViewById(R.id.cast_text);
+        setUpFAB(view);
 
         castRecyclerView = (RecyclerView) view.findViewById(R.id.cast_recycler_view);
         castRecyclerView.setHasFixedSize(true);
@@ -70,24 +79,52 @@ public class SoundCastFragment extends Fragment {
             Log.e("SQLError", "SQL error: " + e);
         }
 
-        final ClipboardManager myClipboard;
-        myClipboard = (ClipboardManager) mainActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+        return view;
+    }
 
-        cast_button.setOnClickListener(new View.OnClickListener() {
+    public void setUpFAB(View view) {
+           /* menu button */
+        menu = (FloatingActionsMenu) view.findViewById(R.id.multiple_actions);
+
+        /* TODO: change for later - just want it to work! */
+        int normal_pink = Color.parseColor("#e91e63");
+        int pressed_pink = Color.parseColor("#ec407a");
+
+        /* add to queue button */
+        addToQueueActionButton = new FloatingActionButton(mainActivity);
+        addToQueueActionButton.setColorNormal(normal_pink);
+        addToQueueActionButton.setColorPressed(pressed_pink);
+        addToQueueActionButton.setIconDrawable(getResources().getDrawable(R.drawable.ic_queue_music_white_24dp));
+        addToQueueActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mainActivity.isConnected() && myClipboard.getPrimaryClip() != null) {
+                Log.v("kelby", "addToQueueActionButton c");
+            }
+        });
+        menu.addButton(addToQueueActionButton);
 
+
+        /* cast button */
+        castActionButton = new FloatingActionButton(mainActivity);
+        castActionButton.setIconDrawable(getResources().getDrawable(R.drawable.ic_cast_white_24dp));
+        castActionButton.setColorNormal(normal_pink);
+        castActionButton.setColorPressed(pressed_pink);
+        castActionButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final ClipboardManager myClipboard;
+                myClipboard = (ClipboardManager) mainActivity.getSystemService(Context.CLIPBOARD_SERVICE);
+
+                if (mainActivity.isConnected() && myClipboard.getPrimaryClip() != null) {
                     String soundcloudlink_input = myClipboard.getText().toString();
                     getSoundcloudInfo(soundcloudlink_input);
                 } else {
                     Toast.makeText(mainActivity,
                             "Please connect Chromecast first.", Toast.LENGTH_SHORT).show();
                 }
-                cast_text.setText("");
             }
         });
-        return view;
+        menu.addButton(castActionButton);
     }
 
     private void getSoundcloudInfo(String text) {

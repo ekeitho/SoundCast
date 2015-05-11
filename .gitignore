@@ -1,3 +1,7 @@
+# me
+*.DS_Store
+*.iml
+
 ### Android ###
 # Built application files
 *.apk
