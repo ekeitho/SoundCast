@@ -71,9 +71,8 @@ public class MainActivity extends ActionBarActivity {
     private RemoteMediaPlayer mRemoteMediaPlayer;
     private MenuItem castMenuItem;
     private Queue<RouteInfo> routes;
-
-
-
+    private Queue<String> postponedCasts;
+    private SoundCastFragment soundCastFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,6 +81,10 @@ public class MainActivity extends ActionBarActivity {
 
         /* intiialize data structs */
         routes = new ArrayDeque<>();
+        postponedCasts = new ArrayDeque<>();
+        /* get reference to our fragment */
+        soundCastFragment = (SoundCastFragment)
+                getSupportFragmentManager().findFragmentById(R.id.castFragment);
 
         // Configure Cast device discovery
         mMediaRouter = MediaRouter.getInstance(getApplicationContext());
@@ -91,28 +94,8 @@ public class MainActivity extends ActionBarActivity {
                                 .getString(R.string.app_id))).build();
         mMediaRouterCallback = new MyMediaRouterCallback();
 
+        /* initialize our cast media player */
         mRemoteMediaPlayer = new RemoteMediaPlayer();
-        mRemoteMediaPlayer.setOnStatusUpdatedListener(
-                new RemoteMediaPlayer.OnStatusUpdatedListener() {
-                    @Override
-                    public void onStatusUpdated() {
-                        MediaStatus mediaStatus = mRemoteMediaPlayer.getMediaStatus();
-                        //boolean isPlaying = mediaStatus.getPlayerState() ==
-                        //MediaStatus.PLAYER_STATE_PLAYING;
-
-                    }
-                });
-
-        mRemoteMediaPlayer.setOnMetadataUpdatedListener(
-                new RemoteMediaPlayer.OnMetadataUpdatedListener() {
-                    @Override
-                    public void onMetadataUpdated() {
-                        MediaInfo mediaInfo = mRemoteMediaPlayer.getMediaInfo();
-                        //MediaMetadata metadata = mediaInfo.getMetadata();
-
-                    }
-                });
-
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -195,7 +178,6 @@ public class MainActivity extends ActionBarActivity {
                 .getActionProvider(castMenuItem);
         // Set the MediaRouteActionProvider selector for device discovery.
         mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
-
         return true;
     }
 
@@ -285,7 +267,6 @@ public class MainActivity extends ActionBarActivity {
 
                     // Check if the receiver app is still running
                     if ((connectionHint != null) && connectionHint.getBoolean(Cast.EXTRA_APP_NO_LONGER_RUNNING)) {
-
                         Log.d(TAG, "App  is no longer running");
                         teardown();
                     } else {
@@ -332,6 +313,11 @@ public class MainActivity extends ActionBarActivity {
                                                                     if (!result.getStatus().isSuccess()) {
                                                                         Log.e(TAG, "Failed to request status.");
 
+                                                                    }
+                                                                    else {
+                                                                        if (postponedCasts.peek() != null) {
+                                                                            soundCastFragment.getSoundcloudInfo(postponedCasts.poll());
+                                                                        }
                                                                     }
                                                                 }
                                                             });
@@ -397,6 +383,13 @@ public class MainActivity extends ActionBarActivity {
         mSelectedDevice = null;
         mWaitingForReconnect = false;
         mSessionId = null;
+    }
+
+    /* this is useful if the user isn't connected to a cast yet,
+        but clicks the cast button, so lets not let them do more work!
+     */
+    public void addToPostponedQueue(String url) {
+        postponedCasts.add(url);
     }
 
     public Queue<RouteInfo> getRouteQueue() {

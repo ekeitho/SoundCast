@@ -119,6 +119,12 @@ public class SoundCastFragment extends Fragment {
                 if (!mainActivity.isConnected()) {
                     /* if they are near a cast */
                     if (mainActivity.getRouteQueue().peek() != null) {
+                        /* lets store a copy of the users result and wait for it to be casted
+                           so the user doesnt have to click again
+                         */
+                        if (myClipboard.getPrimaryClip() != null) {
+                           mainActivity.addToPostponedQueue(myClipboard.getText().toString());
+                        }
                         mainActivity.getRouteQueue().peek().select();
                     }
                     else {
@@ -126,9 +132,10 @@ public class SoundCastFragment extends Fragment {
                                 "Please connect a Chromecast first.", Toast.LENGTH_SHORT).show();
                     }
                 }
-                /* you are connected to a chromecast */
+
+                /* they are connected to a chromecast */
                 else {
-                    /* if you have something copied to cast */
+                    /* if they have something copied to cast */
                     if (myClipboard.getPrimaryClip() != null) {
                         getSoundcloudInfo(myClipboard.getText().toString());
                     }
@@ -142,7 +149,7 @@ public class SoundCastFragment extends Fragment {
         menu.addButton(castActionButton);
     }
 
-    private void getSoundcloudInfo(String text) {
+    public void getSoundcloudInfo(String text) {
         String input = text.replaceAll(".*soundcloud.com/", "");
         String username = input.replaceAll("/.*", "");
         String songname = input.replaceAll(".*/", "");
