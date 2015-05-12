@@ -20,8 +20,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Queue;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.PersistableBundle;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
@@ -69,19 +71,21 @@ public class MainActivity extends ActionBarActivity {
     private boolean mWaitingForReconnect;
     private String mSessionId;
     private RemoteMediaPlayer mRemoteMediaPlayer;
-    private MenuItem castMenuItem;
     private Queue<RouteInfo> routes;
     private Queue<String> postponedCasts;
     private SoundCastFragment soundCastFragment;
+    private String shareMsgFromSoundcloud;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
+        setContentView(R.layout.activity_main);
         /* intiialize data structs */
         routes = new ArrayDeque<>();
         postponedCasts = new ArrayDeque<>();
+
         /* get reference to our fragment */
         soundCastFragment = (SoundCastFragment)
                 getSupportFragmentManager().findFragmentById(R.id.castFragment);
@@ -96,6 +100,15 @@ public class MainActivity extends ActionBarActivity {
 
         /* initialize our cast media player */
         mRemoteMediaPlayer = new RemoteMediaPlayer();
+
+        shareMsgFromSoundcloud = handleIncomingIntentShareIfAny();
+        /* this will happen when user wants to share from soundcloud */
+        if (mMediaRouter.getRoutes().size() > 1) {
+            routes.add(mMediaRouter.getRoutes().get(1));
+            postponedCasts.add(shareMsgFromSoundcloud);
+            routes.peek().select();
+        }
+
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -173,7 +186,7 @@ public class MainActivity extends ActionBarActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        castMenuItem = menu.findItem(R.id.media_route_menu_item);
+        MenuItem castMenuItem = menu.findItem(R.id.media_route_menu_item);
         MediaRouteActionProvider mediaRouteActionProvider = (MediaRouteActionProvider) MenuItemCompat
                 .getActionProvider(castMenuItem);
         // Set the MediaRouteActionProvider selector for device discovery.
@@ -189,8 +202,8 @@ public class MainActivity extends ActionBarActivity {
         @Override
         public void onRouteAdded(MediaRouter router, RouteInfo route) {
             super.onRouteAdded(router, route);
-
             /* there could be more than one route seen */
+            Log.v("route", "added!");
             if (!routes.add(route)) {
                 Log.e(TAG, "Adding to queue failed.");
             }
@@ -283,51 +296,50 @@ public class MainActivity extends ActionBarActivity {
                 } else {
                     // Launch the receiver app
                     Cast.CastApi
-                        .launchApplication(mApiClient,
-                                getString(R.string.app_id), false)
-                        .setResultCallback(
-                                new ResultCallback<Cast.ApplicationConnectionResult>() {
-                                    @Override
-                                    public void onResult(
-                                            ApplicationConnectionResult result) {
-                                        Status status = result.getStatus();
+                            .launchApplication(mApiClient,
+                                    getString(R.string.app_id), false)
+                            .setResultCallback(
+                                    new ResultCallback<Cast.ApplicationConnectionResult>() {
+                                        @Override
+                                        public void onResult(
+                                                ApplicationConnectionResult result) {
+                                            Status status = result.getStatus();
 
-                                        if (status.isSuccess()) {
-                                            // Create the custom message
-                                            // channel
-                                            try {
-                                                Cast.CastApi.setMessageReceivedCallbacks(mApiClient,
-                                                        mRemoteMediaPlayer.getNamespace(), mRemoteMediaPlayer);
-                                            } catch (IOException e) {
-                                                Log.e(TAG, "Exception while creating media channel", e);
-                                            }
+                                            if (status.isSuccess()) {
+                                                // Create the custom message
+                                                // channel
+                                                try {
+                                                    Cast.CastApi.setMessageReceivedCallbacks(mApiClient,
+                                                            mRemoteMediaPlayer.getNamespace(), mRemoteMediaPlayer);
+                                                } catch (IOException e) {
+                                                    Log.e(TAG, "Exception while creating media channel", e);
+                                                }
 
-                                            mApplicationStarted = true;
+                                                mApplicationStarted = true;
 
-                                            mRemoteMediaPlayer
-                                                    .requestStatus(mApiClient)
-                                                    .setResultCallback(
-                                                            new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
-                                                                @Override
-                                                                public void onResult(RemoteMediaPlayer.MediaChannelResult result) {
-                                                                    if (!result.getStatus().isSuccess()) {
-                                                                        Log.e(TAG, "Failed to request status.");
+                                                mRemoteMediaPlayer
+                                                        .requestStatus(mApiClient)
+                                                        .setResultCallback(
+                                                                new ResultCallback<RemoteMediaPlayer.MediaChannelResult>() {
+                                                                    @Override
+                                                                    public void onResult(RemoteMediaPlayer.MediaChannelResult result) {
+                                                                        if (!result.getStatus().isSuccess()) {
+                                                                            Log.e(TAG, "Failed to request status.");
 
-                                                                    }
-                                                                    else {
-                                                                        if (postponedCasts.peek() != null) {
-                                                                            soundCastFragment.getSoundcloudInfo(postponedCasts.poll());
+                                                                        } else {
+                                                                            if (postponedCasts.peek() != null) {
+                                                                                soundCastFragment.getSoundcloudInfo(postponedCasts.poll());
+                                                                            }
                                                                         }
                                                                     }
-                                                                }
-                                                            });
-                                        } else {
-                                            Log.e(TAG,
-                                                    "application could not launch");
-                                            teardown();
+                                                                });
+                                            } else {
+                                                Log.e(TAG,
+                                                        "application could not launch");
+                                                teardown();
+                                            }
                                         }
-                                    }
-                                });
+                                    });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Failed to launch application", e);
@@ -362,14 +374,14 @@ public class MainActivity extends ActionBarActivity {
         Log.d(TAG, "teardown");
         if (mApiClient != null) {
             if (mApplicationStarted) {
-                if (mApiClient.isConnected()  || mApiClient.isConnecting()) {
+                if (mApiClient.isConnected() || mApiClient.isConnecting()) {
                     try {
                         Cast.CastApi.stopApplication(mApiClient, mSessionId);
                         if (mRemoteMediaPlayer != null) {
                             Cast.CastApi.removeMessageReceivedCallbacks(
                                     mApiClient,
                                     mRemoteMediaPlayer.getNamespace());
-                            mRemoteMediaPlayer= null;
+                            mRemoteMediaPlayer = null;
                         }
                     } catch (IOException e) {
                         Log.e(TAG, "Exception while removing channel", e);
@@ -385,6 +397,24 @@ public class MainActivity extends ActionBarActivity {
         mSessionId = null;
     }
 
+    private String handleIncomingIntentShareIfAny() {
+        // Get intent, action and MIME type
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
+
+        /* soundclouds share link comes in second and will not have a split
+           greater than 0! hackity hack hack!
+         */
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if ("text/plain".equals(type)) {
+                String input = intent.getStringExtra(Intent.EXTRA_TEXT);
+                return input.split("\n")[1];
+            }
+        }
+        return null;
+    }
+
     /* this is useful if the user isn't connected to a cast yet,
         but clicks the cast button, so lets not let them do more work!
      */
@@ -395,6 +425,7 @@ public class MainActivity extends ActionBarActivity {
     public Queue<RouteInfo> getRouteQueue() {
         return routes;
     }
+    
 
     public void sendTrack(String url, String artist, String title, Uri album_art) {
         if (mApiClient != null) {
@@ -423,8 +454,7 @@ public class MainActivity extends ActionBarActivity {
             } catch (Exception e) {
                 Log.e(TAG, "Problem opening media during loading", e);
             }
-        }
-        else {
+        } else {
             Log.e(TAG, "Problem with null mApiClient.");
         }
     }

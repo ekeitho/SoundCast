@@ -52,8 +52,8 @@ public class SoundCastFragment extends Fragment {
     private RecyclerView castRecyclerView;
     private SoundCastAdapter soundCastAdapter;
     private FloatingActionsMenu menu;
-    private FloatingActionButton addToQueueActionButton;
-    private FloatingActionButton castActionButton;
+    protected FloatingActionButton addToQueueActionButton;
+    protected FloatingActionButton castActionButton;
 
     @Override
     public void onAttach(Activity activity) {
@@ -111,6 +111,7 @@ public class SoundCastFragment extends Fragment {
         castActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 final ClipboardManager myClipboard;
                 myClipboard = (ClipboardManager) mainActivity.getSystemService(Context.CLIPBOARD_SERVICE);
 
@@ -118,6 +119,7 @@ public class SoundCastFragment extends Fragment {
                    and automatically select it for the user */
                 if (!mainActivity.isConnected()) {
                     /* if they are near a cast */
+
                     if (mainActivity.getRouteQueue().peek() != null) {
                         /* lets store a copy of the users result and wait for it to be casted
                            so the user doesnt have to click again
@@ -135,7 +137,6 @@ public class SoundCastFragment extends Fragment {
 
                 /* they are connected to a chromecast */
                 else {
-                    /* if they have something copied to cast */
                     if (myClipboard.getPrimaryClip() != null) {
                         getSoundcloudInfo(myClipboard.getText().toString());
                     }
@@ -150,7 +151,9 @@ public class SoundCastFragment extends Fragment {
     }
 
     public void getSoundcloudInfo(String text) {
+
         String input = text.replaceAll(".*soundcloud.com/", "");
+
         String username = input.replaceAll("/.*", "");
         String songname = input.replaceAll(".*/", "");
         SoundCastItem item = null;
@@ -188,7 +191,7 @@ public class SoundCastFragment extends Fragment {
             /* since not all tracks/ are unique, i have to look up through users/id/track first */
             response = fetchJSON(USERS + "/tracks" + client_query);
 
-            System.out.println("I am here befor response != null statement \n");
+
             if (response != null) {
                 try {
                     SoundCastItem item = null;
@@ -234,8 +237,6 @@ public class SoundCastFragment extends Fragment {
         JSONArray user_tracksJSON = new JSONArray(response);
         JSONObject track_infoJSON;
 
-
-        System.out.println("I am here in get soundcloud data from json\n");
 
         for (int i = 0; i < user_tracksJSON.length(); i++) {
             track_infoJSON = user_tracksJSON.getJSONObject(i);
