@@ -101,11 +101,16 @@ public class MainActivity extends ActionBarActivity {
         /* initialize our cast media player */
         mRemoteMediaPlayer = new RemoteMediaPlayer();
 
+
         shareMsgFromSoundcloud = handleIncomingIntentShareIfAny();
         /* this will happen when user wants to share from soundcloud */
         if (mMediaRouter.getRoutes().size() > 1) {
             routes.add(mMediaRouter.getRoutes().get(1));
             postponedCasts.add(shareMsgFromSoundcloud);
+
+            if (routes.peek().isSelected()) {
+                mMediaRouter.unselect(1);
+            }
             routes.peek().select();
         }
 
@@ -214,7 +219,6 @@ public class MainActivity extends ActionBarActivity {
             Log.d(TAG, "onRouteSelected");
             // Handle the user route selection.
             mSelectedDevice = CastDevice.getFromBundle(info.getExtras());
-
             launchReceiver();
         }
 
@@ -316,7 +320,6 @@ public class MainActivity extends ActionBarActivity {
                                                 }
 
                                                 mApplicationStarted = true;
-
                                                 mRemoteMediaPlayer
                                                         .requestStatus(mApiClient)
                                                         .setResultCallback(
@@ -402,7 +405,6 @@ public class MainActivity extends ActionBarActivity {
         Intent intent = getIntent();
         String action = intent.getAction();
         String type = intent.getType();
-
         /* soundclouds share link comes in second and will not have a split
            greater than 0! hackity hack hack!
          */
@@ -425,7 +427,7 @@ public class MainActivity extends ActionBarActivity {
     public Queue<RouteInfo> getRouteQueue() {
         return routes;
     }
-    
+
 
     public void sendTrack(String url, String artist, String title, Uri album_art) {
         if (mApiClient != null) {
