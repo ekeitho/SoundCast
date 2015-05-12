@@ -16,6 +16,9 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -46,21 +49,17 @@ public class SoundCastFragment extends Fragment {
     private static final String TAG = "SoundCastFragment";
 
     private MainActivity mainActivity;
-    private Button cast_button;
-    private EditText cast_text;
     private RecyclerView castRecyclerView;
     private SoundCastAdapter soundCastAdapter;
     private FloatingActionsMenu menu;
     private FloatingActionButton addToQueueActionButton;
     private FloatingActionButton castActionButton;
-    private Bitmap bitmap;
 
     @Override
     public void onAttach(Activity activity) {
         mainActivity = (MainActivity) activity;
         super.onAttach(activity);
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -98,7 +97,7 @@ public class SoundCastFragment extends Fragment {
         addToQueueActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.v("kelby", "addToQueueActionButton c");
+                Log.v(TAG, "addToQueueActionButton c");
             }
         });
         menu.addButton(addToQueueActionButton);
@@ -115,12 +114,28 @@ public class SoundCastFragment extends Fragment {
                 final ClipboardManager myClipboard;
                 myClipboard = (ClipboardManager) mainActivity.getSystemService(Context.CLIPBOARD_SERVICE);
 
-                if (mainActivity.isConnected() && myClipboard.getPrimaryClip() != null) {
-                    String soundcloudlink_input = myClipboard.getText().toString();
-                    getSoundcloudInfo(soundcloudlink_input);
-                } else {
-                    Toast.makeText(mainActivity,
-                            "Please connect Chromecast first.", Toast.LENGTH_SHORT).show();
+                /* if not connected lets see if we are near so user can cast
+                   and automatically select it for the user */
+                if (!mainActivity.isConnected()) {
+                    /* if they are near a cast */
+                    if (mainActivity.getRouteQueue().peek() != null) {
+                        mainActivity.getRouteQueue().peek().select();
+                    }
+                    else {
+                        Toast.makeText(mainActivity,
+                                "Please connect a Chromecast first.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                /* you are connected to a chromecast */
+                else {
+                    /* if you have something copied to cast */
+                    if (myClipboard.getPrimaryClip() != null) {
+                        getSoundcloudInfo(myClipboard.getText().toString());
+                    }
+                    else {
+                        Toast.makeText(mainActivity,
+                                "Please copy a link first, then cast.", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });

@@ -16,32 +16,24 @@ package com.ekeitho.sound;
  */
 
 import java.io.IOException;
-import java.sql.SQLException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Queue;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.MediaRouteActionProvider;
-import android.support.v7.graphics.Palette;
 import android.support.v7.media.MediaRouteSelector;
 import android.support.v7.media.MediaRouter;
 import android.support.v7.media.MediaRouter.RouteInfo;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
-import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.google.android.gms.cast.Cast;
 import com.google.android.gms.cast.Cast.ApplicationConnectionResult;
 import com.google.android.gms.cast.CastDevice;
@@ -77,13 +69,19 @@ public class MainActivity extends ActionBarActivity {
     private boolean mWaitingForReconnect;
     private String mSessionId;
     private RemoteMediaPlayer mRemoteMediaPlayer;
+    private MenuItem castMenuItem;
+    private Queue<RouteInfo> routes;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ActionBar actionBar = getSupportActionBar();
+        /* intiialize data structs */
+        routes = new ArrayDeque<>();
 
         // Configure Cast device discovery
         mMediaRouter = MediaRouter.getInstance(getApplicationContext());
@@ -192,11 +190,12 @@ public class MainActivity extends ActionBarActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        MenuItem mediaRouteMenuItem = menu.findItem(R.id.media_route_menu_item);
+        castMenuItem = menu.findItem(R.id.media_route_menu_item);
         MediaRouteActionProvider mediaRouteActionProvider = (MediaRouteActionProvider) MenuItemCompat
-                .getActionProvider(mediaRouteMenuItem);
+                .getActionProvider(castMenuItem);
         // Set the MediaRouteActionProvider selector for device discovery.
         mediaRouteActionProvider.setRouteSelector(mMediaRouteSelector);
+
         return true;
     }
 
@@ -204,6 +203,16 @@ public class MainActivity extends ActionBarActivity {
      * Callback for MediaRouter events
      */
     private class MyMediaRouterCallback extends MediaRouter.Callback {
+
+        @Override
+        public void onRouteAdded(MediaRouter router, RouteInfo route) {
+            super.onRouteAdded(router, route);
+
+            /* there could be more than one route seen */
+            if (!routes.add(route)) {
+                Log.e(TAG, "Adding to queue failed.");
+            }
+        }
 
         @Override
         public void onRouteSelected(MediaRouter router, RouteInfo info) {
@@ -259,6 +268,7 @@ public class MainActivity extends ActionBarActivity {
      */
     private class ConnectionCallbacks implements
             GoogleApiClient.ConnectionCallbacks {
+
         @Override
         public void onConnected(Bundle connectionHint) {
             Log.d(TAG, "onConnected");
@@ -350,6 +360,7 @@ public class MainActivity extends ActionBarActivity {
      */
     private class ConnectionFailedListener implements
             GoogleApiClient.OnConnectionFailedListener {
+
         @Override
         public void onConnectionFailed(ConnectionResult result) {
             Log.e(TAG, "onConnectionFailed ");
@@ -386,6 +397,10 @@ public class MainActivity extends ActionBarActivity {
         mSelectedDevice = null;
         mWaitingForReconnect = false;
         mSessionId = null;
+    }
+
+    public Queue<RouteInfo> getRouteQueue() {
+        return routes;
     }
 
     public void sendTrack(String url, String artist, String title, Uri album_art) {
