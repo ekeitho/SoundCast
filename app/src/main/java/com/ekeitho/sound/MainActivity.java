@@ -58,6 +58,7 @@ public class MainActivity extends ActionBarActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int REQUEST_CODE = 1;
+    private static int test = 1;
 
     private MediaRouter mMediaRouter;
     private MediaRouteSelector mMediaRouteSelector;
@@ -76,15 +77,20 @@ public class MainActivity extends ActionBarActivity {
     private SoundCastFragment soundCastFragment;
     private String shareMsgFromSoundcloud;
 
+    /* this is used when the app is open and the user wants to share from soundcloud */
+    private static int hasOpened = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.v("show up", "here!");
         setContentView(R.layout.activity_main);
         /* intiialize data structs */
         routes = new ArrayDeque<>();
         postponedCasts = new ArrayDeque<>();
+
 
         /* get reference to our fragment */
         soundCastFragment = (SoundCastFragment)
@@ -103,8 +109,8 @@ public class MainActivity extends ActionBarActivity {
 
 
         shareMsgFromSoundcloud = handleIncomingIntentShareIfAny();
-        /* this will happen when user wants to share from soundcloud */
-        if (mMediaRouter.getRoutes().size() > 1) {
+        /* this will happen when user wants to share from soundcloud & app is open */
+        if (hasOpened > 0) {
             routes.add(mMediaRouter.getRoutes().get(1));
             postponedCasts.add(shareMsgFromSoundcloud);
 
@@ -113,7 +119,13 @@ public class MainActivity extends ActionBarActivity {
             }
             routes.peek().select();
         }
+        /* this will happen if share happens and the app isn't open yet */
+        else if(shareMsgFromSoundcloud != null) {
+            postponedCasts.add(shareMsgFromSoundcloud);
+        }
 
+        /* update to show change in phase */
+        hasOpened++;
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -204,6 +216,7 @@ public class MainActivity extends ActionBarActivity {
      */
     private class MyMediaRouterCallback extends MediaRouter.Callback {
 
+
         @Override
         public void onRouteAdded(MediaRouter router, RouteInfo route) {
             super.onRouteAdded(router, route);
@@ -211,6 +224,10 @@ public class MainActivity extends ActionBarActivity {
             Log.v("route", "added!");
             if (!routes.add(route)) {
                 Log.e(TAG, "Adding to queue failed.");
+            }
+            /* lets launch the cast right away for the user */
+            if (shareMsgFromSoundcloud != null) {
+                routes.peek().select();
             }
         }
 
@@ -354,6 +371,7 @@ public class MainActivity extends ActionBarActivity {
             Log.d(TAG, "onConnectionSuspended");
             mWaitingForReconnect = true;
         }
+
     }
 
     /**

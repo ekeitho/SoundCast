@@ -152,7 +152,7 @@ public class SoundCastFragment extends Fragment {
 
     public void getSoundcloudInfo(String text) {
 
-        String input = text.replaceAll(".*soundcloud.com/", "");
+        String input = text.replaceAll("(.*\\n.*|.*)soundcloud.com/", "");
 
         String username = input.replaceAll("/.*", "");
         String songname = input.replaceAll(".*/", "");
